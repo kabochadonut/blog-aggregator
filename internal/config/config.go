@@ -18,7 +18,7 @@ func (cfg *Config) SetUser(username string) {
 	cfg.CurrentUserName = username
 	err := write(cfg)
 	if err != nil {
-		log.Fatalf("Failed to write file: %v", err)
+		log.Fatalf("Failed to write user to file: %v", err)
 	}
 }
 

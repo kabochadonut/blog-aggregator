@@ -2,6 +2,7 @@ package main
 
 import (
 	"blog-aggregator/internal/database"
+	"blog-aggregator/internal/rss"
 	"context"
 	"errors"
 	"fmt"
@@ -83,6 +84,58 @@ func handlerGetUsers(s *state, cmd command) error {
 		} else {
 			fmt.Printf("* %s\n", name)
 		}
+	}
+	return nil
+}
+
+func handlerAgg(s *state, cmd command) error {
+	feed, err := rss.FetchFeed(context.Background(), "https://www.wagslane.dev/index.xml")
+	if err != nil {
+		return err
+	}
+	fmt.Println(feed)
+	return nil
+}
+
+func handlerAddFeed(s *state, cmd command) error {
+	if len(cmd.args) < 2 {
+		return fmt.Errorf("Usage: <command> [args]")
+	}
+	name := cmd.args[0]
+	url := cmd.args[1]
+	username := s.config.CurrentUserName
+	user, err := s.db.GetUser(context.Background(), username)
+	id := user.ID
+	if err != nil {
+		return fmt.Errorf("Failed to retrieve user: %v", err)
+	}
+	params := database.CreateFeedParams{
+		ID:        uuid.New(),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		Name:      name,
+		Url:       url,
+		UserID:    id,
+	}
+	feed, err := s.db.CreateFeed(context.Background(), params)
+	if err != nil {
+		return fmt.Errorf("Failed to create feed: %v", err)
+	}
+	fmt.Printf("Feed: '%s' at '%s' created by '%s'\n", feed.Name, feed.Url, user.Name)
+	return nil
+}
+
+func handlerFeeds(s *state, _ command) error {
+	feeds, err := s.db.GetFeeds(context.Background())
+	if err != nil {
+		return fmt.Errorf("Failed to retrieve feeds: %v", err)
+	}
+	for _, feed := range feeds {
+		username, err := s.db.GetUserName(context.Background(), feed.UserID)
+		if err != nil {
+			return fmt.Errorf("Failed to retrieve username with ID: %v", err)
+		}
+		fmt.Printf("> '%s' @ '%s' by '%s'\n", feed.Name, feed.Url, username)
 	}
 	return nil
 }

@@ -26,6 +26,9 @@ func main() {
 	commands.register("register", handlerRegister)
 	commands.register("reset", handlerReset)
 	commands.register("users", handlerGetUsers)
+	commands.register("agg", handlerAgg)
+	commands.register("addfeed", handlerAddFeed)
+	commands.register("feeds", handlerFeeds)
 	args := os.Args
 	if len(args) == 1 {
 		log.Fatalf("Usage: <command> [args]")
@@ -42,7 +45,7 @@ func main() {
 	err = commands.run(&appState, cmd)
 	if err != nil {
 		fmt.Printf("Command: '%s' failed to run\n", cmdName)
-		os.Exit(1)
+		log.Fatalf("Error: %v", err)
 	}
 
 }

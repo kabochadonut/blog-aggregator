@@ -97,31 +97,36 @@ func handlerAgg(s *state, cmd command) error {
 	return nil
 }
 
-func handlerAddFeed(s *state, cmd command) error {
+func handlerAddFeed(s *state, cmd command, user database.User) error {
 	if len(cmd.args) < 2 {
 		return fmt.Errorf("Usage: <command> [args]")
 	}
 	name := cmd.args[0]
 	url := cmd.args[1]
-	username := s.config.CurrentUserName
-	user, err := s.db.GetUser(context.Background(), username)
-	id := user.ID
-	if err != nil {
-		return fmt.Errorf("Failed to retrieve user: %v", err)
-	}
 	params := database.CreateFeedParams{
 		ID:        uuid.New(),
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 		Name:      name,
 		Url:       url,
-		UserID:    id,
+		UserID:    user.ID,
 	}
 	feed, err := s.db.CreateFeed(context.Background(), params)
 	if err != nil {
 		return fmt.Errorf("Failed to create feed: %v", err)
 	}
+	feedFollow, err := s.db.CreateFeedFollow(context.Background(), database.CreateFeedFollowParams{
+		ID:        uuid.New(),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		UserID:    user.ID,
+		FeedID:    feed.ID,
+	})
+	if err != nil {
+		return fmt.Errorf("Failed to create feed follow: %w", err)
+	}
 	fmt.Printf("Feed: '%s' at '%s' created by '%s'\n", feed.Name, feed.Url, user.Name)
+	fmt.Printf("Feed %s followed by %s\n", feedFollow.UserName, feedFollow.FeedName)
 	return nil
 }
 
@@ -129,6 +134,10 @@ func handlerFeeds(s *state, _ command) error {
 	feeds, err := s.db.GetFeeds(context.Background())
 	if err != nil {
 		return fmt.Errorf("Failed to retrieve feeds: %v", err)
+	}
+	if len(feeds) == 0 {
+		fmt.Println("No feeds found.")
+		return nil
 	}
 	for _, feed := range feeds {
 		username, err := s.db.GetUserName(context.Background(), feed.UserID)

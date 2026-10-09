@@ -33,6 +33,7 @@ func main() {
 	commands.register("follow", middlewareLoggedIn(handlerFollow))
 	commands.register("following", middlewareLoggedIn(handlerListFeedFollows))
 	commands.register("unfollow", middlewareLoggedIn(handlerUnfollow))
+	commands.register("browse", middlewareLoggedIn(handlerBrowse))
 	args := os.Args
 	if len(args) == 1 {
 		log.Fatalf("Usage: <command> [args]")

@@ -1,2 +1,4 @@
 *.sh
+/internal/rss/
+/internal/database/
 
